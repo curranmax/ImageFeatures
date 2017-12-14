@@ -402,7 +402,7 @@ class Image:
 		norm = sum(abs(v) for row in LH for v in row) + \
 				sum(abs(v) for row in HL for v in row) + \
 				sum(abs(v) for row in HH for v in row)
-		if total == norm:
+		if norm == 0.0:
 			return [0.0]
 		else:
 			return [total / norm]
@@ -426,7 +426,10 @@ class Image:
 			if i in (6, 7, 10, 11):
 				middle_sum += this_sum
 			all_sum += this_sum
-		return [this_sum / all_sum]
+		if all_sum == 0.0:
+			return [0.0]
+		else:
+			return [this_sum / all_sum]
 
 	# ----------------------
 	# | Debugging Fuctions |
