@@ -1,6 +1,9 @@
 
 from PIL import Image as PIL_Image
 
+import numpy as np
+import pywt
+
 import math
 import os
 
@@ -247,6 +250,42 @@ class Image:
 					rv.append(sum(abs(a - b) for a, b in zip(bins[i], bins[j])))
 		return rv
 
+	# ---------------------
+	# |  Wavelet Features |
+	# ---------------------
+
+	# Returns the sum of the wavelet coefficients of the selected HSV channel and layer divided by the sum of the absolute value of the same coefficients.
+	def hueWaveletFeature(self, layer):
+		return self._hsvWaveletFeature(0, layer)
+
+	def saturationWaveletFeature(self, layer):
+		return self._hsvWaveletFeature(1, layer)
+
+	def valueWaveletFeature(self, layer):
+		return self._hsvWaveletFeature(2, layer)
+
+	# Returns the sum of the wavelet features of the selected HSV channel across all layers.
+	def sumHueWaveletFeature(self):
+		return [sum(self.hueWaveletFeature(layer)[0] for layer in [1, 2, 3])]
+
+	def sumSaturationWaveletFeature(self):
+		return [sum(self.saturationWaveletFeature(layer)[0] for layer in [1, 2, 3])]
+
+	def sumValueWaveletFeature(self):
+		return [sum(self.valueWaveletFeature(layer)[0] for layer in [1, 2, 3])]
+
+	# -----------------------------
+	# |  Depth of Field Features  |
+	# -----------------------------
+
+	def hueDepthOfField(self):
+		return self._depthOfField(0)
+
+	def saturationDepthOfField(self):
+		return self._depthOfField(1)
+
+	def valueDepthOfField(self):
+		return self._depthOfField(2)
 
 	# ---------------------
 	# |  Helper Fuctions  |
@@ -287,6 +326,58 @@ class Image:
 		return [toal_f(pixel_f(self.pix[x, y])[chan]
 						for x in xrange(wr[0], wr[1]) for y in xrange(hr[0], hr[1]))
 					for wr in ws for hr in hs]
+
+	# Input:
+	#         wr - Range of pixels in the x dimension to use.
+	#         hr - Range of pixels in the y dimension to use.
+	#         pixel_f - function that takes a single 3-tuple RGB pixel and outputs a 3-tuple.
+	#         chan - the index of the 3-tuple outputted by pixel_f to be averaged.
+	# Output: returns three 3-tuple of the three wavelet coefficients (as numpy arrays) for the layers in ascending order.
+	def _waveletTransform(self, wr, hr, pixel_f, chan):
+		arr = np.array([[pixel_f(self.pix[x, y])[chan] for y in xrange(hr[0], hr[1])] for x in xrange(wr[0], wr[1])])
+		coeffs = pywt.wavedec2(arr, 'db1', level = 3)
+		LL, (LH1, HL1, HH1), (LH2, HL2, HH2), (LH3, HL3, HH3) = coeffs
+		return (LH1, HL1, HH1), (LH2, HL2, HH2), (LH3, HL3, HH3)
+
+	# Input:
+	#         chan - The index of the HSV channel to use
+	#         layer - The wavelet transform layer to use, must be 1, 2, or 3
+	# Output:
+	#         A list of length one. The only element is the sum of the wavelet coefficients of the selected channel and layer divided by the sum of the absolute value of the same coefficients.
+	def _hsvWaveletFeature(self, chan, layer):
+		if layer not in [1, 2, 3]:
+			raise Exception('Invalid layer value')
+
+		coeffs = self._waveletTransform((0, self.width), (0, self.height), RGBtoHSV, chan)
+
+		LH, HL, HH = coeffs[layer - 1]
+
+		total = sum(v for row in LH for v in row) + \
+				sum(v for row in HL for v in row) + \
+				sum(v for row in HH for v in row)
+
+		norm = sum(abs(v) for row in LH for v in row) + \
+				sum(abs(v) for row in HL for v in row) + \
+				sum(abs(v) for row in HH for v in row)
+
+		return [total / norm]
+
+	def _depthOfField(self, chan):
+		ws, hs = self._getSections(4)
+
+		wt_level3 = [self._waveletTransform(wr, hr, RGBtoHSV, chan)[2] for wr in ws for hr in hs]
+		middle_sum = 0.0
+		all_sum = 0.0
+		for i in range(len(wt_level3)):
+			LH, HL, HH = wt_level3[i]
+			this_sum = sum(v for row in LH for v in row) + \
+						sum(v for row in HL for v in row) + \
+						sum(v for row in HH for v in row)
+
+			if i in (6, 7, 10, 11):
+				middle_sum += this_sum
+			all_sum += this_sum
+		return [this_sum / all_sum]
 
 	# ----------------------
 	# | Debugging Fuctions |
