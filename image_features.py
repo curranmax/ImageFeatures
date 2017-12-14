@@ -46,8 +46,16 @@ def RGBtoHSV(vs):
 
 # Input: RGB pixel as 3-tuple.
 # Output: Same exact RGP pixel.
-def RGBtoRGB(v):
-	return v
+def RGBtoRGB(vs):
+	return vs
+
+# Converts a RGB pixel to a Pleasure/Arousal/Dominance.
+# See https://pdfs.semanticscholar.org/2c41/1a12f33f15451e1659a3435391962c0cc144.pdf for more details
+def RGBtoPAD(vs):
+	vs = RGBtoHSV(vs)
+	return (0.69 * vs[2]  + 0.22 * vs[1], # Pleasure
+			-0.31 * vs[2] + 0.60 * vs[1], # Arousal
+			0.76 * vs[2]  + 0.32 * vs[1]) # Dominance
 
 # Creates a new image_feature.Image object from the given file.
 # Input:
@@ -162,6 +170,40 @@ class Image:
 	
 	def minValueOfEachSection(self):
 		return self._functionChannelOfEachSection(min, RGBtoHSV, 2)
+
+	# ----------------------
+	# |    PAD Features    |
+	# ----------------------
+
+	# Averages the desired channel of the PAD representation of each pixel for each of the nine sections.
+	def averagePleasureOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoPAD, 0)
+	
+	def averageArousalOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoPAD, 1)
+	
+	def averageDominanceOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoPAD, 2)
+
+	# Finds the maximum of the desired channel of the RGB representation of each pixel for each of the nine sections.
+	def maxPleasureOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoPAD, 0)
+
+	def maxArousalOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoPAD, 1)
+
+	def maxDominanceOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoPAD, 2)
+
+	# Finds the minimum of the desired channel of the RGB representation of each pixel for each of the nine sections.
+	def maxPleasureOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoPAD, 0)
+
+	def minArousalOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoPAD, 1)
+
+	def minDominanceOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoPAD, 2)
 
 	# ----------------------
 	# |    Bin Features    |
@@ -362,6 +404,10 @@ class Image:
 
 		return [total / norm]
 
+	# Input:
+	#         chan - The index of the HSV channel to use
+	# Output:
+	#         The sum of the third level wavelet coefficients of the middle 4 sections (when breaking the image into 16 sections) divided by the sum of coefficients over the whole image.
 	def _depthOfField(self, chan):
 		ws, hs = self._getSections(4)
 
