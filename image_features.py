@@ -69,10 +69,11 @@ class Image:
 	# Input:
 	#   pil_image - PIL.Image object.
 	def __init__(self, pil_image):
-		self.image = pil_image
+		# Converts image to RGB
+		self.image = pil_image.convert('RGB')
 
 		# TODO only load pixel data as necessary
-		self.pix = pil_image.load()
+		self.pix = self.image.load()
 
 		self.width, self.height = self.image.size
 
@@ -114,7 +115,7 @@ class Image:
 		return self._functionChannelOfEachSection(max, RGBtoRGB, 2)
 
 	# Finds the minimum of the desired channel of the RGB representation of each pixel for each of the nine sections.
-	def maxRedOfEachSection(self):
+	def minRedOfEachSection(self):
 		return self._functionChannelOfEachSection(min, RGBtoRGB, 0)
 
 	def minGreenOfEachSection(self):
@@ -365,7 +366,7 @@ class Image:
 	# Output: A list of length 9, where each element is the average the desired pixel channel for a section of the image.
 	def _functionChannelOfEachSection(self, total_f, pixel_f, chan):
 		ws, hs = self._getSections(3)
-		return [toal_f(pixel_f(self.pix[x, y])[chan]
+		return [total_f(pixel_f(self.pix[x, y])[chan]
 						for x in xrange(wr[0], wr[1]) for y in xrange(hr[0], hr[1]))
 					for wr in ws for hr in hs]
 
