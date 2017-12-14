@@ -197,7 +197,7 @@ class Image:
 		return self._functionChannelOfEachSection(max, RGBtoPAD, 2)
 
 	# Finds the minimum of the desired channel of the RGB representation of each pixel for each of the nine sections.
-	def maxPleasureOfEachSection(self):
+	def minPleasureOfEachSection(self):
 		return self._functionChannelOfEachSection(min, RGBtoPAD, 0)
 
 	def minArousalOfEachSection(self):
