@@ -402,8 +402,10 @@ class Image:
 		norm = sum(abs(v) for row in LH for v in row) + \
 				sum(abs(v) for row in HL for v in row) + \
 				sum(abs(v) for row in HH for v in row)
-
-		return [total / norm]
+		if total == norm:
+			return [0.0]
+		else:
+			return [total / norm]
 
 	# Input:
 	#         chan - The index of the HSV channel to use
