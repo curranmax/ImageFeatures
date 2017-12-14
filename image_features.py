@@ -14,7 +14,7 @@ import os
 
 # Input: RGB color as a 3-tuple
 # Output: HSV representation of the inputted color as a 3-tuple
-def toHSV(vs):
+def RGBtoHSV(vs):
 	r = float(vs[0]) / 255.0
 	g = float(vs[1]) / 255.0
 	b = float(vs[2]) / 255.0
@@ -40,6 +40,11 @@ def toHSV(vs):
 	v = cmax
 
 	return (int(h), s, v)
+
+# Input: RGB pixel as 3-tuple.
+# Output: Same exact RGP pixel.
+def RGBtoRGB(v):
+	return v
 
 # Creates a new image_feature.Image object from the given file.
 # Input:
@@ -74,22 +79,50 @@ class Image:
 		return [self.width, self.height]
 
 	# ----------------------
+	# |    RGB Features    |
+	# ----------------------
+
+	# Averages the R of the RGB representation of each pixel for each of the nine sections.
+	def averageRedOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 0)
+
+	# Averages the G of the RGB representation of each pixel for each of the nine sections.
+	def averageGreenOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 1)
+
+	# Averages the B of the RGB representation of each pixel for each of the nine sections.
+	def averageBlueOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 2)
+
+	# ----------------------
 	# |    HSV Features    |
 	# ----------------------
 
 	# Averages the V of the HSV represenation of each pixel over the entire image
 	def averageBrightness(self):
-		return [sum(toHSV(self.pix[x, y])[2] for x in range(self.width) for y in range(self.height)) / float(self.width * self.height)]
+		return [sum(RGBtoHSV(self.pix[x, y])[2] for x in range(self.width) for y in range(self.height)) / float(self.width * self.height)]
 
 	# Divides each dimension into 3 equal sections, and then averages the Hue of only the middle section
 	def averageHueOfMiddle(self):
 		ws, hs = self._getSections(3)
-		return [sum(toHSV(self.pix[x, y])[0] for x in xrange(*ws[1]) for y in xrange(*hs[1])) / float(ws[1][1] - ws[1][0]) / float(hs[1][1] - hs[1][0])]
+		return [sum(RGBtoHSV(self.pix[x, y])[0] for x in xrange(*ws[1]) for y in xrange(*hs[1])) / float(ws[1][1] - ws[1][0]) / float(hs[1][1] - hs[1][0])]
 
 	# Divides each dimension into 3 equal sections, and then averages the Saturation of only the middle section
 	def averageSaturationOfMiddle(self):
 		ws, hs = self._getSections(3)
-		return [sum(toHSV(self.pix[x, y])[1] for x in xrange(*ws[1]) for y in xrange(*hs[1])) / float(ws[1][1] - ws[1][0]) / float(hs[1][1] - hs[1][0])]
+		return [sum(RGBtoHSV(self.pix[x, y])[1] for x in xrange(*ws[1]) for y in xrange(*hs[1])) / float(ws[1][1] - ws[1][0]) / float(hs[1][1] - hs[1][0])]
+
+	# Averages the H of the HSV representation of each pixel for each of the nine sections.
+	def averageHueOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 0)
+
+	# Averages the S of the HSV representation of each pixel for each of the nine sections.
+	def averageSaturationOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 1)
+
+	# Averages the V of the HSV representation of each pixel for each of the nine sections.
+	def averageValueOfEachSection(self):
+		return self._averageChannelOfEachSection(RGBtoRGB, 2)
 
 	# ----------------------
 	# |    Bin Features    |
@@ -197,6 +230,17 @@ class Image:
 
 		return w_sections, h_sections
 
+	# Input:
+	#         f - function that takes a single 3-tuple RGB pixel and outputs a 3-tuple.
+	#         chan - the index of the 3-tuple outputted by f to be averaged.
+	# Output: A list of length 9, where each element is the average the desired pixel channel for a section of the image.
+	def _averageChannelOfEachSection(self, f, chan):
+		ws, hs = self._getSections(3)
+		return [sum(f(self.pix[x, y])[chan]
+						for x in xrange(wr[0], wr[1]) for y in xrange(hr[0], hr[1]))
+				/ float((wr[1] - wr[0]) * (hr[1] - hr[0]))
+					for wr in ws for hr in hs]
+
 	# ----------------------
 	# | Debugging Fuctions |
 	# ----------------------
@@ -216,12 +260,8 @@ class Image:
 if __name__ == '__main__':
 	# Runs debugging unit tests for the Image class
 
-	# TODO Test the size features
-
-	# TODO Test the averageBrightness for images that are only one color
-
-	# Test toHSV()
-	print 'Testing toHSV()'
+	# Test RGBtoHSV()
+	print 'Testing RGBtoHSV()'
 	tests = [{'rgb': (0,0,0), 'hsv':(0, 0.0, 0.0)},
 				{'rgb': (255, 0, 0), 'hsv': (0, 1.0, 1.0)},
 				{'rgb': (0, 255, 0), 'hsv': (120, 1.0, 1.0)},
@@ -237,13 +277,13 @@ if __name__ == '__main__':
 				{'rgb': (100, 100, 150), 'hsv': (240, 0.333, 0.588)}]
 
 	for test in tests:
-		comp_hsv = toHSV(test['rgb'])
+		comp_hsv = RGBtoHSV(test['rgb'])
 
 		if comp_hsv[0] != test['hsv'][0] or \
 				abs(comp_hsv[1] - test['hsv'][1]) > 0.001 or \
 				abs(comp_hsv[2] - test['hsv'][2]) > 0.001:
-			raise Exception('Error in toHSV(): got toHSV(' + str(test['rgb']) + ') = ' + str(comp_hsv) + '; expected ' + str(test['hsv']))
-	print 'Passed toHSV() tests'
+			raise Exception('Error in RGBtoHSV(): got RGBtoHSV(' + str(test['rgb']) + ') = ' + str(comp_hsv) + '; expected ' + str(test['hsv']))
+	print 'Passed RGBtoHSV() tests'
 
 	# List of test images with known outputted values
 	test_images = [{'filename': 'test_images/all_color.png',
