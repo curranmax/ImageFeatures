@@ -82,17 +82,35 @@ class Image:
 	# |    RGB Features    |
 	# ----------------------
 
-	# Averages the R of the RGB representation of each pixel for each of the nine sections.
+	# Averages the desired channel of the RGB representation of each pixel for each of the nine sections.
 	def averageRedOfEachSection(self):
 		return self._averageChannelOfEachSection(RGBtoRGB, 0)
-
-	# Averages the G of the RGB representation of each pixel for each of the nine sections.
+	
 	def averageGreenOfEachSection(self):
 		return self._averageChannelOfEachSection(RGBtoRGB, 1)
-
-	# Averages the B of the RGB representation of each pixel for each of the nine sections.
+	
 	def averageBlueOfEachSection(self):
 		return self._averageChannelOfEachSection(RGBtoRGB, 2)
+
+	# Finds the maximum of the desired channel of the RGB representation of each pixel for each of the nine sections.
+	def maxRedOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoRGB, 0)
+
+	def maxGreenOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoRGB, 1)
+
+	def maxBlueOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoRGB, 2)
+
+	# Finds the minimum of the desired channel of the RGB representation of each pixel for each of the nine sections.
+	def maxRedOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoRGB, 0)
+
+	def minGreenOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoRGB, 1)
+
+	def minBlueOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoRGB, 2)
 
 	# ----------------------
 	# |    HSV Features    |
@@ -112,17 +130,35 @@ class Image:
 		ws, hs = self._getSections(3)
 		return [sum(RGBtoHSV(self.pix[x, y])[1] for x in xrange(*ws[1]) for y in xrange(*hs[1])) / float(ws[1][1] - ws[1][0]) / float(hs[1][1] - hs[1][0])]
 
-	# Averages the H of the HSV representation of each pixel for each of the nine sections.
+	# Averages the desired channel of the HSV representation of each pixel for each of the nine sections.
 	def averageHueOfEachSection(self):
-		return self._averageChannelOfEachSection(RGBtoRGB, 0)
-
-	# Averages the S of the HSV representation of each pixel for each of the nine sections.
+		return self._averageChannelOfEachSection(RGBtoHSV, 0)
+	
 	def averageSaturationOfEachSection(self):
-		return self._averageChannelOfEachSection(RGBtoRGB, 1)
-
-	# Averages the V of the HSV representation of each pixel for each of the nine sections.
+		return self._averageChannelOfEachSection(RGBtoHSV, 1)
+	
 	def averageValueOfEachSection(self):
-		return self._averageChannelOfEachSection(RGBtoRGB, 2)
+		return self._averageChannelOfEachSection(RGBtoHSV, 2)
+
+	# Finds the maximum of the desired channel of the HSV representation of each pixel for each of the nine sections.
+	def maxHueOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoHSV, 0)
+	
+	def maxSaturationOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoHSV, 1)
+	
+	def maxValueOfEachSection(self):
+		return self._functionChannelOfEachSection(max, RGBtoHSV, 2)
+
+	# Finds the minimum of the desired channel of the HSV representation of each pixel for each of the nine sections.
+	def minHueOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoHSV, 0)
+	
+	def minSaturationOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoHSV, 1)
+	
+	def minValueOfEachSection(self):
+		return self._functionChannelOfEachSection(min, RGBtoHSV, 2)
 
 	# ----------------------
 	# |    Bin Features    |
@@ -231,14 +267,25 @@ class Image:
 		return w_sections, h_sections
 
 	# Input:
-	#         f - function that takes a single 3-tuple RGB pixel and outputs a 3-tuple.
-	#         chan - the index of the 3-tuple outputted by f to be averaged.
+	#         pixel_f - function that takes a single 3-tuple RGB pixel and outputs a 3-tuple.
+	#         chan - the index of the 3-tuple outputted by pixel_f to be averaged.
 	# Output: A list of length 9, where each element is the average the desired pixel channel for a section of the image.
-	def _averageChannelOfEachSection(self, f, chan):
+	def _averageChannelOfEachSection(self, pixel_f, chan):
 		ws, hs = self._getSections(3)
-		return [sum(f(self.pix[x, y])[chan]
+		return [sum(pixel_f(self.pix[x, y])[chan]
 						for x in xrange(wr[0], wr[1]) for y in xrange(hr[0], hr[1]))
 				/ float((wr[1] - wr[0]) * (hr[1] - hr[0]))
+					for wr in ws for hr in hs]
+
+	# Input:
+	#         total_f - function applied to the selected channel of all pixels in each section.
+	#         pixel_f - function that takes a single 3-tuple RGB pixel and outputs a 3-tuple.
+	#         chan - the index of the 3-tuple outputted by pixel_f to be averaged.
+	# Output: A list of length 9, where each element is the average the desired pixel channel for a section of the image.
+	def _functionChannelOfEachSection(self, total_f, pixel_f, chan):
+		ws, hs = self._getSections(3)
+		return [toal_f(pixel_f(self.pix[x, y])[chan]
+						for x in xrange(wr[0], wr[1]) for y in xrange(hr[0], hr[1]))
 					for wr in ws for hr in hs]
 
 	# ----------------------
